@@ -267,7 +267,7 @@ class: center, middle
 
 [wesslen.github.io](https://wesslen.github.io)
 
-[CFPB GitHub Code](https://github.com/wesslen/nlp-talk)
+[CFPB GitHub Code](https://github.com/wesslen/nlp-ryan)
 
 ---
 
