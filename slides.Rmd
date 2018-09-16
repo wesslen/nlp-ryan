@@ -215,11 +215,9 @@ class: center, middle
 
 ---
 
-# Example: Topic 18
+class: middle, center
+<img src="./img/example-topic.png" width=600 height=600>
 
-<div align="center">
-<img src="./img/example-topic.png" width=532 height=488>
-</div>
 ---
 
 # Topic 18: "Bonus, offer, points, promotion"
@@ -237,11 +235,22 @@ DT::datatable(
         "}"))
 ) 
 ```
+
 ---
 
 class: center, middle
 
 ![](./img/topics.png)
+
+---
+
+# Adding in Covariates
+
+<div align="center">
+<img src="./img/bank-effect-topic18.png" width=560 height=460>
+</div>
+
+[Structural topic modeling](http://www.structuraltopicmodel.com/)
 
 ---
 

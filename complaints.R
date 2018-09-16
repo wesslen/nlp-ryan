@@ -1,9 +1,13 @@
-library(quanteda); library(tidyverse); library(lubridate)
+library(quanteda); library(tidyverse); library(lubridate); library(tidytext); library(ggthemes)
+
+load("./data/stmRun.Rdata")
 
 banks <- c("BANK OF AMERICA, NATIONAL ASSOCIATION",
            "CITIBANK, N.A.",
            "JPMORGAN CHASE & CO.",
            "WELLS FARGO & COMPANY")
+
+# initial data processing
 
 df <- read_csv("./data/Consumer_Complaints.csv") %>%
   filter(Company %in% banks) %>%
@@ -39,8 +43,8 @@ df$text <- df$text %>%
   str_replace_all(" 'm", "'m") %>%
   str_replace_all("XXXX", " ")
 
+# quanteda / text preprocessing
 
-# topic modeling
 myCorpus <- corpus(df$text)
 docvars(myCorpus, field = "Bank") <- df$Bank
 docvars(myCorpus, field = "Month") <- as.integer(as.factor(df$Date))
@@ -77,6 +81,9 @@ wordDistMat <- dist(wordDfm)
 wordCluster <- hclust(wordDistMat)
 ggdendro::ggdendrogram(wordCluster, rotate = TRUE, size = 2) 
 
+
+# topic modeling (stm)
+
 library(stm)
 
 # use quanteda converter to convert our Dfm
@@ -90,12 +97,7 @@ stmFit <- stm(out$documents, out$vocab, K = k,
               prevalence =~ s(Month) + Product + Bank,
               max.em.its = 150, data = out$meta, init.type = "Spectral", seed = 300)
 
-library(tidytext)
-
 # summary
-
-library(ggthemes)
-
 td_gamma <- tidy(stmFit, matrix = "gamma") # no document_names
 
 top_terms <- td_beta %>%
@@ -176,22 +178,31 @@ reorder_within <- function(x, by, within, fun = mean, sep = "___", ...) {
   stats::reorder(new_x, by, FUN = fun)
 }
 
+# use topics
+topicLevel <- arrange(topics, desc(TopicProportions)) %>% 
+  mutate(topic = as.character(topic)) %>%
+  select(topic)
+
 # Examine the topics
 td_beta %>%
+  inner_join(topics, by = c("topic" = "TopicNumber")) %>%
+  mutate(topic = paste0("Topic ",topic)) %>%
+  mutate(topic = factor(topic, levels = topicLevel$topic)) %>%
   group_by(topic) %>%
   top_n(8, beta) %>%
   ungroup() %>%
-  mutate(topic = paste0("Topic ", topic),
-         term = reorder_within(term, beta, topic)) %>%
-  ggplot(aes(term, beta, fill = topic)) +
+  mutate(term = reorder_within(term, beta, topic)) %>%
+  ggplot(aes(term, beta, fill = Bank)) +
   geom_col(alpha = 0.8, show.legend = FALSE) +
   facet_wrap(~ topic, ncol = 4, scales = "free_y") +
   theme_tufte(base_family = "IBMPlexSans", ticks = FALSE) +
   scale_x_reordered() +
+  scale_fill_manual(values = colors) +
   theme_bw() +
   coord_flip() +
   labs(x = "",
-       y = "")
+       y = "") +
+  ggsave("./img/topics.png", width = 8.7, height = 7.3)
 
 # get topic 18
 
@@ -208,10 +219,14 @@ td_beta %>%
   theme_tufte(base_family = "IBMPlexSans", ticks = FALSE) +
   scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
   scale_x_reordered() +
+  scale_fill_manual(values = "#003FA9") + 
   theme_bw() +
+  theme(text = element_text(size = 24),
+        plot.title = element_text(hjust = 0.5, size = 20)) +
   coord_flip() +
-  labs(x = "",
-       y = "Likelihood of Word given Topic")
+  labs(x = "", y = "",
+       title = "Likelihood of Word given Topic") +
+  ggsave("./img/example-topic.png", height =6, width = 6)
 
 
 ## Prep
@@ -251,7 +266,7 @@ t <- purrr::map_df(c("JPM","CITI","WFC"), getDifference)
 top_terms2 <- td_beta %>%
   arrange(beta) %>%
   group_by(topic) %>%
-  top_n(5, beta) %>%
+  top_n(10, beta) %>%
   arrange(-beta) %>%
   select(topic, term) %>%
   summarise(terms = list(term)) %>%
@@ -259,15 +274,27 @@ top_terms2 <- td_beta %>%
   unnest() %>%
   mutate(terms = paste0(terms, " (",topic,")"))
 
-ord <- c("fraud, claim, fraudulent, charges, card (10)", 
-         "property, mortgage, court, note, documents (8)", 
-         "fees, fee, charged, balance, overdraft (14)",  # bac
-        "told, called, call, back, asked (3)", 
-        "letter, received, complaint, information, request (4)", 
-        "interest, balance, rate, amount, statement (13)", # even
-        "insurance, car, company, paid, vehicle (6)", 
-        "payment, payments, late, due, pay (12)", 
-        "us, years, husband, house, wife (15)") # competitor
+
+i <- 5
+j <- 5
+terms <- sapply(strsplit(top_terms2$terms, ","), function(x) {
+  g <- seq_along(x)
+  g[g < i] <- i
+  g[g > j + 1] <- j+1
+  paste(tapply(x, g, paste, collapse = ","), collapse = ",\n")
+})
+
+top_terms2$terms <- terms # update; add in \n
+
+ord <- c("fraud, claim, fraudulent, charges, card,\n transaction, debit, transactions, made, investigation (10)", 
+         "property, mortgage, court, note, documents,\n law, trust, foreclosure, notice, legal (8)", 
+         "fees, fee, charged, balance, overdraft,\n charge, checking, transaction, charges, service (14)",  # bac
+        "told, called, call, back, asked,\n phone, spoke, days, received, day (3)", 
+        "letter, received, complaint, information, request,\n issue, requested, response, provided, stated (4)", 
+        "interest, balance, rate, amount, statement,\n paid, minimum, principal, pay, full (13)", # even
+        "insurance, car, company, paid, vehicle,\n home, title, property, contract, policy (6)", 
+        "payment, payments, late, due, pay,\n made, paid, month, loan, make (12)", 
+        "us, years, husband, house, wife,\n home, attorney, work, family, name (15)") # competitor
 
 t %>%
   inner_join(top_terms2, by = c("Topic" = "topic")) %>%
@@ -281,14 +308,38 @@ t %>%
   labs(x = " ", y = " ", title = "Effect of Bank (Relative to BAC) of Topic Size",
        subtitle = "With 99% C.I. estimates") +
   geom_hline(yintercept = 0, color = "darkgrey", linetype = 2) +
-  annotate("text", x = 0.6, y = -0.018, label = "More like BAC", size = 3, color = "#DC1431") +
-  annotate("text", x = 0.6, y = 0.016, label = "More like Competitor", size = 3) +
+  annotate("text", x = 0.6, y = -0.018, label = "More like Competitor", size = 3) +
+  annotate("text", x = 0.6, y = 0.016, label = "More like BAC", size = 3, color = "#DC1431") +
   facet_wrap(~terms) +
   theme_bw() +
   theme(axis.text.x = element_text(size = 14),
         axis.text.y = element_text(size = 14),
         legend.position = "none") +
-  ylim(-0.03,0.03)
+  ylim(-0.03,0.03) +
+  ggsave("./img/bank-effect.png")
+
+
+t %>%
+  inner_join(top_terms2, by = c("Topic" = "topic")) %>%
+  mutate(Topic = paste0("Topic ",Topic)) %>%
+  filter(terms %in% c("offer, bonus, points, promotion, miles,\n days, requirements, months, receive, opened (18)")) %>% 
+  ggplot() +
+  geom_pointrange(aes(x = Bank, y = Mean, ymin = LCL, ymax = UCL), size =1,
+                  fatten = 2) +
+  coord_flip() + 
+  labs(x = " ", y = " ", title = "Effect of Bank (Relative to BAC) on Topic 18 Probability",
+       subtitle = "With 99% C.I. estimates") +
+  geom_hline(yintercept = 0, color = "darkgrey", linetype = 2) +
+  annotate("text", x = 0.6, y = -0.05, label = "More like Competitor", size = 4) +
+  annotate("text", x = 0.6, y = 0.05, label = "More like BAC", size = 4, color = "#DC1431") +
+  facet_wrap(~terms) +
+  theme_bw() +
+  theme(axis.text.x = element_text(size = 14),
+        axis.text.y = element_text(size = 14),
+        strip.text = element_text(size=12),
+        legend.position = "none") +
+  ylim(-0.08,0.08) +
+  ggsave("./img/bank-effect-topic18.png")
 
 
 # total
