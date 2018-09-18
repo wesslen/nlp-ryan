@@ -2,7 +2,7 @@
 title: "Analyzing CFPB Complaints with Topic Modeling"
 subtitle: "Ryan Wesslen"
 author: "UNC Charlotte - bitly.com/ryan-nlp"
-date: "Sept 17, 2018"
+date: "Sept 19, 2018"
 output:
   xaringan::moon_reader:
     lib_dir: libs
@@ -84,16 +84,6 @@ class: center, middle
 
 ---
 
-## Explainable AI / Interpretable ML
-
-<div align="center">
-<img src="./img/xai.png" width=700 height=400>
-</div>
-
-Source: <a href="https://www.darpa.mil/program/explainable-artificial-intelligence" target="_blank">DARPA XAI</a>
-
----
-
 ## Visual Interactive Labeling (CHISSL)
 
 <div align="center">
@@ -106,6 +96,17 @@ Paper under revision <a href="https://github.com/pnnl/chissl/" target="_blank">(
 
 ---
 
+## Explainable AI / Interpretable ML
+
+<div align="center">
+<img src="./img/xai.png" width=700 height=400>
+</div>
+
+Source: <a href="https://www.darpa.mil/program/explainable-artificial-intelligence" target="_blank">DARPA XAI</a>
+
+
+---
+
 ## Applied Text Analyses
 
 .pull-left[
@@ -113,12 +114,12 @@ Paper under revision <a href="https://github.com/pnnl/chissl/" target="_blank">(
 <img src="./img/tmm.png" width=500 height=300>
 </div>
 
-For more technical, see (<a href="https://arxiv.org/abs/1803.11045" target="_blank">"Computer Assisted Text Analysis"</a>) paper
+For more technical details, see <a href="https://arxiv.org/abs/1803.11045" target="_blank">"Computer-Assisted Text Analysis"</a> paper.
 ]
 
 .pull-right[
 
-- **Management**: Corporate websites on recruitment content (<a href="http://journals.sagepub.com/doi/abs/10.1177/0149206318764295" target="_blank">MNE Paper</a>)
+- **Management**: Corporate websites' recruitment content (<a href="http://journals.sagepub.com/doi/abs/10.1177/0149206318764295" target="_blank">MNE Paper</a>)
 
 - **Organizational Science**: Open-ended survey on manager leadership (<a href="https://link.springer.com/article/10.1007/s10869-017-9528-3" target="_blank">TMM Paper</a>, left)
 
